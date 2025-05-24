@@ -1,0 +1,49 @@
+from sympy import Symbol, Function, Number
+
+from modulus.sym.eq.pde import PDE
+from modulus.sym.node import Node
+
+class HeatFlux(PDE):
+
+    name = "HeatFluxBC"
+
+    def __init__(self, T, kappa, q, dim = 3 , time = False):
+        self.T = T
+        self.dim = dim
+        self.time = time
+
+        x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
+        normal_x = Symbol("normal_x")
+        normal_y = Symbol("normal_y")
+        normal_z = Symbol("normal_z")
+
+        t = Symbol("t")
+
+        input_variables = {"x": x, "y": y, "z": z, "t": t}
+        if self.dim == 1:
+            input_variables.pop("y")
+            input_variables.pop("z")
+        elif self.dim == 2:
+            input_variables.pop("z")
+        if not self.time:
+            input_variables.pop("t")
+
+        T = Function(T)(*input_variables)
+        grad_T = T.diff(x)
+        if self.dim == 2:
+            grad_T += T.diff(y)
+        elif self.dim == 3:
+            grad_T += T.diff(y) + T.diff(z)
+        self.equations = {}
+        if self.dim == 3:
+            self.equations["heat_flux_" + self.T] = (
+                kappa * (normal_x * T.diff(x)  + normal_y * T.diff(y) + normal_z * T.diff(z)) - q
+            )
+        elif self.dim == 2:
+            self.equations["heat_flux_" + self.T] = (
+                kappa * (normal_x * T.diff(x)  + normal_y * T.diff(y)) - q
+            )
+        elif self.dim == 1:
+            self.equations["heat_flux_" + self.T] = (
+                kappa * (normal_x * T.diff(x)) - q
+            )

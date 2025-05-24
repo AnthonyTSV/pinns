@@ -1,0 +1,20 @@
+defaults:
+- physicsnemo_default
+-   scheduler: tf_exponential_lr
+-   optimizer: adam
+-   loss: sum
+- _self_
+custom:
+    activation: silu
+    parametric: false
+    layer_size: 256
+    num_layers: 5
+scheduler:
+    decay_rate: 0.95
+    decay_steps: 5000
+training:
+    max_steps: 200000
+batch_size:
+    left_wall: 1000
+    wall: 1000
+    interior: 4000

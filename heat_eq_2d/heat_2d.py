@@ -26,9 +26,6 @@ from physicsnemo.models.layers.activations import get_activation
 
 from physicsnemo.sym.models.fully_connected import FullyConnectedArch
 import matplotlib.pyplot as plt
-import scienceplots
-
-plt.style.use("science")
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 

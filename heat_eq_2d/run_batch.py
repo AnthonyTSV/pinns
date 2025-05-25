@@ -38,11 +38,11 @@ def run_experiment_w_architectures(architectures, activation_func, batch_size):
         subprocess.run([sys.executable, BASE_DIR+"/heat_2d.py"])
 
 if __name__ == "__main__":
-    activation_funcs = ["tanh", "relu", "sigmoid", "silu"]
+    activation_funcs = ["tanh", "relu", "sigmoid", "silu", "leaky_relu"]
     batch_sizes = [2000, 4000]
     achitectures = [(64, 1), (128, 2), (128, 3), (256, 4), (256, 5), (256, 6)]
     # read config.yaml file and set the parameters
 
-    run_experiment_w_act_funcs(activation_funcs, 2000, (128, 2))
-    run_experiment_w_batch_sizes(batch_sizes, "silu", (128, 2))
-    run_experiment_w_architectures(achitectures, "silu", 2000)
+    run_experiment_w_act_funcs(activation_funcs, 2000, (128, 3))
+    run_experiment_w_batch_sizes(batch_sizes, "tanh", (256, 4))
+    run_experiment_w_architectures(achitectures, "tanh", 2000)

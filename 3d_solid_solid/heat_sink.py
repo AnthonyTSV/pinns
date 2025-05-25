@@ -92,19 +92,19 @@ def run(cfg) -> None:
     if cfg.custom.network == "fully_connected":
         heat_net = FullyConnectedArch(
             input_keys=input_keys,
-            layer_size=256,
+            layer_size=128,
             output_keys=[Key("theta_star")],
         )
     elif cfg.custom.network == "fourier_net":
         heat_net = FourierNetArch(
             input_keys=input_keys,
-            layer_size=256,
+            layer_size=128,
             output_keys=[Key("theta_star")],
         )
     elif cfg.custom.network == "modified_fourier_net":
         heat_net = ModifiedFourierNetArch(
             input_keys=input_keys,
-            layer_size=256,
+            layer_size=128,
             output_keys=[Key("theta_star")],
         )
     phys_node = [

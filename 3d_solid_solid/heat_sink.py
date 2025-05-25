@@ -32,7 +32,7 @@ from physicsnemo.sym.models.fully_connected import FullyConnectedArch
 from physicsnemo.models.layers.activations import get_activation
 from physicsnemo.sym.utils.io.vtk import VTKFromFile, VTKUniformGrid
 from physicsnemo.sym.domain.inferencer import PointVTKInferencer
-from physicsnemo.sym.utils.io import InferencerPlotter, GridValidatorPlotter
+from physicsnemo.sym.utils.io import InferencerPlotter, GridValidatorPlotter, GridValidatorPlotter
 from physicsnemo.sym.models.modified_fourier_net import ModifiedFourierNetArch
 from physicsnemo.sym.models.fourier_net import FourierNetArch
 from physicsnemo.sym.utils.io.vtk import var_to_polyvtk
@@ -43,8 +43,8 @@ dir_path = os.path.dirname(os.path.abspath(__file__))
 
 @physicsnemo.sym.main(config_path="conf", config_name="config")
 def run(cfg) -> None:
-    cfg.network_dir = dir_path + "/outputs"
-    cfg.initialization_network_dir = dir_path + "/outputs"
+    cfg.network_dir = dir_path + "/outputs/" + cfg.custom.network
+    cfg.initialization_network_dir = dir_path + "/outputs/" + cfg.custom.network
     x0, y0, z0 = -0.75, -0.50, -0.4375
     dx, dy, dz = 0.2, 0.2, 0.01
 
@@ -53,7 +53,7 @@ def run(cfg) -> None:
     ambient_temp = 30
     h_conv = 0.1
 
-    delta_t = source_temp - ambient_temp
+    delta_t = 100
 
     # bottom‐patch fraction
     hx_frac, hy_frac = 0.50, 0.50
@@ -89,14 +89,26 @@ def run(cfg) -> None:
     )
 
     input_keys = [Key("x"), Key("y"), Key("z")]
-    heat_net = ModifiedFourierNetArch(
-        input_keys=input_keys,
-        layer_size=128,
-        output_keys=[Key("theta_star")],
-        activation_fn=get_activation("tanh"),
-    )
+    if cfg.custom.network == "fully_connected":
+        heat_net = FullyConnectedArch(
+            input_keys=input_keys,
+            layer_size=256,
+            output_keys=[Key("theta_star")],
+        )
+    elif cfg.custom.network == "fourier_net":
+        heat_net = FourierNetArch(
+            input_keys=input_keys,
+            layer_size=256,
+            output_keys=[Key("theta_star")],
+        )
+    elif cfg.custom.network == "modified_fourier_net":
+        heat_net = ModifiedFourierNetArch(
+            input_keys=input_keys,
+            layer_size=256,
+            output_keys=[Key("theta_star")],
+        )
     phys_node = [
-        Node.from_sympy(delta_t * Symbol("theta_star") + ambient_temp, "theta")
+        Node.from_sympy(delta_t * Symbol("theta_star"), "theta")
     ]
     nodes = (
         heat_eq.make_nodes() +
@@ -179,7 +191,7 @@ def run(cfg) -> None:
     #     vtk_obj=vtk_obj,
     #     nodes=nodes,
     #     input_vtk_map={"x": "x", "y": "y", "z": "z"},
-    #     true_vtk_map={"theta": ["Temperature"]},
+    #     true_vtk_map={"theta": ["Temperature_true"]},
     #     requires_grad=False,
     #     batch_size=1024,
     # )

@@ -5,7 +5,7 @@ defaults:
 -   loss: sum
 - _self_
 custom:
-    activation: silu
+    activation: tanh
     parametric: false
     layer_size: 256
     num_layers: 6

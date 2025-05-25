@@ -80,7 +80,7 @@ batch_size:
   wall: 1000
   interior: 2000
 custom:
-  activation: silu
+  activation: tanh
   parametric: false
   layer_size: 256
   num_layers: 6

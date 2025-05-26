@@ -53,7 +53,7 @@ def run(cfg) -> None:
     ambient_temp = 30
     h_conv = 0.1
 
-    delta_t = 100
+    delta_t = source_temp - ambient_temp
 
     # bottom‐patch fraction
     hx_frac, hy_frac = 0.50, 0.50
@@ -108,7 +108,7 @@ def run(cfg) -> None:
             output_keys=[Key("theta_star")],
         )
     phys_node = [
-        Node.from_sympy(delta_t * Symbol("theta_star"), "theta")
+        Node.from_sympy(delta_t * Symbol("theta_star") + ambient_temp, "theta")
     ]
     nodes = (
         heat_eq.make_nodes() +

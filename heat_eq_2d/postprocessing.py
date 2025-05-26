@@ -56,16 +56,14 @@ batch_sizes = [2000, 4000]
 achitectures = [(64, 1), (128, 2), (128, 3), (256, 4), (256, 5), (256, 6)]
 
 # plot experiment with activation functions
-# activation_funcs, 2000, (128, 2)
+# activation_funcs, 2000, (128, 3)
 
 paths = {
-    "tanh": [
-        BASE_DIR + "/outputs/tanh_interior_2000_arch_128x2/events.out.tfevents.1748095453.ml1.hpc.uio.no.3124856.0",
-        BASE_DIR + "/outputs/tanh_interior_2000_arch_128x2/events.out.tfevents.1748095687.ml1.hpc.uio.no.3125619.0"
-    ],
-    "relu": BASE_DIR + "/outputs/relu_interior_2000_arch_128x2/events.out.tfevents.1748096477.ml1.hpc.uio.no.3127115.0",
-    "sigmoid": BASE_DIR + "/outputs/sigmoid_interior_2000_arch_128x2/events.out.tfevents.1748097280.ml1.hpc.uio.no.3128585.0",
-    "silu": BASE_DIR + "/outputs/silu_interior_2000_arch_128x2/events.out.tfevents.1748098140.ml1.hpc.uio.no.3130337.0"
+    "tanh": BASE_DIR + "/outputs/tanh_interior_2000_arch_128x3/events.out.tfevents.1748179220.ml1.hpc.uio.no.3493322.0",
+    "relu": BASE_DIR + "/outputs/relu_interior_2000_arch_128x3/events.out.tfevents.1748193178.ml1.hpc.uio.no.3521357.0",
+    "sigmoid": BASE_DIR + "/outputs/sigmoid_interior_2000_arch_128x3/events.out.tfevents.1748194029.ml1.hpc.uio.no.3522996.0",
+    "silu": BASE_DIR + "/outputs/silu_interior_2000_arch_128x3/events.out.tfevents.1748194961.ml1.hpc.uio.no.3524950.0",
+    "leaky_relu": BASE_DIR + "/outputs/leaky_relu_interior_2000_arch_128x3/events.out.tfevents.1748195906.ml1.hpc.uio.no.3526702.0"
 }
 
 data = {}
@@ -83,6 +81,7 @@ plt.plot(data["tanh"]["loss_aggregated"]["step"], data["tanh"]["loss_aggregated"
 plt.plot(data["relu"]["loss_aggregated"]["step"], data["relu"]["loss_aggregated"]["value"], label="ReLU")
 plt.plot(data["sigmoid"]["loss_aggregated"]["step"], data["sigmoid"]["loss_aggregated"]["value"], label="Sigmoid")
 plt.plot(data["silu"]["loss_aggregated"]["step"], data["silu"]["loss_aggregated"]["value"], label="SiLU")
+plt.plot(data["leaky_relu"]["loss_aggregated"]["step"], data["leaky_relu"]["loss_aggregated"]["value"], label="Leaky ReLU")
 plt.xlabel("Step")
 plt.ylabel("Loss")
 plt.grid()
@@ -96,6 +95,7 @@ plt.plot(data["tanh"]["l2_relative_error_theta"]["step"], data["tanh"]["l2_relat
 plt.plot(data["relu"]["l2_relative_error_theta"]["step"], data["relu"]["l2_relative_error_theta"]["value"], label="ReLU")
 plt.plot(data["sigmoid"]["l2_relative_error_theta"]["step"], data["sigmoid"]["l2_relative_error_theta"]["value"], label="Sigmoid")
 plt.plot(data["silu"]["l2_relative_error_theta"]["step"], data["silu"]["l2_relative_error_theta"]["value"], label="SiLU")
+plt.plot(data["leaky_relu"]["l2_relative_error_theta"]["step"], data["leaky_relu"]["l2_relative_error_theta"]["value"], label="Leaky ReLU")
 plt.xlabel("Step")
 plt.ylabel(r"$l_2$ relative error")
 plt.grid()
@@ -104,11 +104,11 @@ plt.legend()
 plt.savefig(BASE_DIR + "/figures/l2_relative_error_theta_activation_functions.pdf", dpi=300)
 
 # get data for batch sizes
-# batch_sizes, "silu", (128, 2)
+# batch_sizes, "tanh", (128, 2)
 
 paths = {
-    2000: BASE_DIR + "/outputs/silu_interior_2000_arch_128x2/events.out.tfevents.1748098140.ml1.hpc.uio.no.3130337.0",
-    4000: BASE_DIR + "/outputs/silu_interior_4000_arch_128x2/events.out.tfevents.1748099027.ml1.hpc.uio.no.3133126.0"
+    2000: BASE_DIR + "/outputs/tanh_interior_2000_arch_256x4/events.out.tfevents.1748196757.ml1.hpc.uio.no.3528539.0",
+    4000: BASE_DIR + "/outputs/tanh_interior_4000_arch_256x4/events.out.tfevents.1748197880.ml1.hpc.uio.no.3530858.0"
 }
 
 data = {}
@@ -138,15 +138,15 @@ plt.legend()
 plt.savefig(BASE_DIR + "/figures/l2_relative_error_theta_batch_sizes.pdf", dpi=300)
 
 # get data for architectures
-# achitectures, "silu", 2000
+# achitectures, "tanh", 2000
 
 paths = {
-    "64x1": BASE_DIR + "/outputs/silu_interior_2000_arch_64x1/events.out.tfevents.1748100089.ml1.hpc.uio.no.3137053.0",
-    "128x2": BASE_DIR + "/outputs/silu_interior_2000_arch_128x2/events.out.tfevents.1748098140.ml1.hpc.uio.no.3130337.0",
-    "128x3": BASE_DIR + "/outputs/silu_interior_2000_arch_128x3/events.out.tfevents.1748100892.ml1.hpc.uio.no.3138793.0",
-    "256x4": BASE_DIR + "/outputs/silu_interior_2000_arch_256x4/events.out.tfevents.1748101823.ml1.hpc.uio.no.3141525.0",
-    "256x5": BASE_DIR + "/outputs/silu_interior_2000_arch_256x5/events.out.tfevents.1748102931.ml1.hpc.uio.no.3145869.0",
-    "256x6": BASE_DIR + "/outputs/silu_interior_2000_arch_256x6/events.out.tfevents.1748104133.ml1.hpc.uio.no.3153217.0"
+    "64x1": BASE_DIR + "/outputs/tanh_interior_2000_arch_64x1/events.out.tfevents.1748199261.ml1.hpc.uio.no.3533312.0",
+    "128x2": BASE_DIR + "/outputs/tanh_interior_2000_arch_128x2/events.out.tfevents.1748200049.ml1.hpc.uio.no.3535027.0",
+    "128x3": BASE_DIR + "/outputs/tanh_interior_2000_arch_128x3/events.out.tfevents.1748179220.ml1.hpc.uio.no.3493322.0",
+    "256x4": BASE_DIR + "/outputs/tanh_interior_2000_arch_256x4/events.out.tfevents.1748196757.ml1.hpc.uio.no.3528539.0",
+    "256x5": BASE_DIR + "/outputs/tanh_interior_2000_arch_256x5/events.out.tfevents.1748200982.ml1.hpc.uio.no.3537179.0",
+    "256x6": BASE_DIR + "/outputs/tanh_interior_2000_arch_256x6/events.out.tfevents.1748202132.ml1.hpc.uio.no.3539885.0"
 }
 
 data = {}

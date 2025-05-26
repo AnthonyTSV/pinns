@@ -80,4 +80,4 @@ batch_size:
   boundary: 5000
   heat_source: 1000
 custom:
-  network: fully_connected
+  network: fourier_net

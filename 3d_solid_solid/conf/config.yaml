@@ -28,3 +28,4 @@ batch_size:
 
 custom:
   network: fourier_net
+  layer_size: 512

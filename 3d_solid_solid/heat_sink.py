@@ -43,8 +43,8 @@ dir_path = os.path.dirname(os.path.abspath(__file__))
 
 @physicsnemo.sym.main(config_path="conf", config_name="config")
 def run(cfg) -> None:
-    cfg.network_dir = dir_path + "/outputs/" + cfg.custom.network
-    cfg.initialization_network_dir = dir_path + "/outputs/" + cfg.custom.network
+    cfg.network_dir = dir_path + "/outputs/" + cfg.custom.network + "_" + cfg.custom.layer_size
+    cfg.initialization_network_dir = dir_path + "/outputs/" + cfg.custom.network  + "_" + cfg.custom.layer_size
     x0, y0, z0 = -0.75, -0.50, -0.4375
     dx, dy, dz = 0.2, 0.2, 0.01
 
@@ -92,20 +92,20 @@ def run(cfg) -> None:
     if cfg.custom.network == "fully_connected":
         heat_net = FullyConnectedArch(
             input_keys=input_keys,
-            layer_size=128,
             output_keys=[Key("theta_star")],
+            layer_size=cfg.custom.layer_size,
         )
     elif cfg.custom.network == "fourier_net":
         heat_net = FourierNetArch(
             input_keys=input_keys,
-            layer_size=128,
             output_keys=[Key("theta_star")],
+            layer_size=cfg.custom.layer_size,
         )
     elif cfg.custom.network == "modified_fourier_net":
         heat_net = ModifiedFourierNetArch(
             input_keys=input_keys,
-            layer_size=128,
             output_keys=[Key("theta_star")],
+            layer_size=cfg.custom.layer_size,
         )
     phys_node = [
         Node.from_sympy(delta_t * Symbol("theta_star") + ambient_temp, "theta")

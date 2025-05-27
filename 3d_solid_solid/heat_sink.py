@@ -53,7 +53,7 @@ def run(cfg) -> None:
     source_temp = 100
     ambient_temp = 30
     h_conv = 0.1
-
+    # Bi = h_conv * dx / kappa
     delta_t = source_temp - ambient_temp
 
     # bottom‐patch fraction
@@ -93,14 +93,14 @@ def run(cfg) -> None:
     if cfg.custom.network == "fully_connected":
         heat_net = FullyConnectedArch(
             input_keys=input_keys,
-            output_keys=[Key("theta_star")],
+            output_keys=[Key("theta")],
             layer_size=cfg.custom.layer_size,
             activation_fn=get_activation("tanh"),
         )
     elif cfg.custom.network == "fourier_net":
         heat_net = FourierNetArch(
             input_keys=input_keys,
-            output_keys=[Key("theta_star")],
+            output_keys=[Key("theta")],
             layer_size=cfg.custom.layer_size,
             activation_fn=get_activation("tanh"),
         )
@@ -108,15 +108,15 @@ def run(cfg) -> None:
         sys.exit(
             f"Unknown network type {cfg.custom.network}. Please choose 'fully_connected' or 'fourier_net'."
         )
-    phys_node = [
-        Node.from_sympy(delta_t * Symbol("theta_star") + ambient_temp, "theta")
-    ]
+    # phys_node = [
+    #     Node.from_sympy(delta_t * Symbol("theta") + ambient_temp, "theta_phys")
+    # ]
     nodes = (
         heat_eq.make_nodes() +
         grad_theta.make_nodes() +
         conv_theta.make_nodes() +
-        [heat_net.make_node(name="heat_net")] +
-        phys_node
+        [heat_net.make_node(name="heat_net")]
+        # phys_node
     )
 
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
@@ -126,43 +126,36 @@ def run(cfg) -> None:
         geometry=heat_sink,
         outvar={"diffusion_theta": 0},
         batch_size=cfg.batch_size.interior,
-        lambda_weighting={
-            "diffusion_theta": Symbol("sdf"),
-        },
+        lambda_weighting={"diffusion_theta": Symbol("sdf")},
     )
     domain.add_constraint(interior, "interior")
+
+    source_grad = 100
+
+    xc, yc = (x0 + dx/2), (y0 + dy/2)
+    wx, wy  = 0.10, 0.10
+
+    xl, xr = xc - wx/2, xc + wx/2
+    yl, yr = yc - wy/2, yc + wy/2
+
+    a = 60.0
+
+    step_lx = 0.5*(tanh(a*(x - xl)) + 1.0)
+    step_rx = 0.5*(tanh(a*(xr - x)) + 1.0)
+    step_ly = 0.5*(tanh(a*(y - yl)) + 1.0)
+    step_ry = 0.5*(tanh(a*(yr - y)) + 1.0)
+
+    indicator = step_lx * step_rx * step_ly * step_ry
+    gradient_normal = source_grad * indicator
 
     heat_source = PointwiseBoundaryConstraint(
         nodes=nodes,
         geometry=heat_sink,
-        outvar={"theta": source_temp},
+        outvar={"normal_gradient_theta": gradient_normal},
         batch_size=cfg.batch_size.heat_source,
-        lambda_weighting={"theta": 10},
-        criteria=
-            Eq(z, z0)
-            & (x >= hs_x0)
-            & (x <= hs_x0 + hx)
-            & (y >= hs_y0)
-            & (y <= hs_y0 + hy)
+        criteria=(Eq(z, z0))
     )
     domain.add_constraint(heat_source, "heat_source")
-
-    bottom_rest = PointwiseBoundaryConstraint(
-        nodes=nodes,
-        geometry=heat_sink,
-        outvar={"normal_gradient_theta": 0},
-        batch_size=cfg.batch_size.boundary,
-        criteria=(
-            Eq(z, z0)
-            & Or(x < hs_x0, x > hs_x0 + hx,
-                y < hs_y0, y > hs_y0 + hy)
-        )
-    )
-    domain.add_constraint(bottom_rest, "bottom_rest")
-
-    def walls_sdf(x, y, z):
-        sdf = heat_sink.sdf({"x": x, "y": y, "z": z}, {})
-        return sdf["sdf"]
 
     convective = PointwiseBoundaryConstraint(
         nodes=nodes,
@@ -176,15 +169,16 @@ def run(cfg) -> None:
 
     vtk_obj = VTKFromFile(
         file_path=to_absolute_path(dir_path + "/temp_sol.vtu"),
-        export_map={"Temperature": ["theta_star"], "Temperature_true": ["theta"]},
+        export_map={"Temperature": ["theta"]},
     )
 
     grid_inferencer = PointVTKInferencer(
         vtk_obj=vtk_obj,
         nodes=nodes,
         input_vtk_map={"x": "x", "y": "y", "z": "z"},
-        output_names=["theta_star", "theta"],
+        output_names=["theta"],
         batch_size=1024,
+        requires_grad=False,
     )
     domain.add_inferencer(grid_inferencer, "vtk_inf")
 

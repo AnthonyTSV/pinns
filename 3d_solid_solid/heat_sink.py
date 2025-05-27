@@ -1,4 +1,5 @@
 import os
+import sys
 import warnings
 
 import torch
@@ -94,18 +95,18 @@ def run(cfg) -> None:
             input_keys=input_keys,
             output_keys=[Key("theta_star")],
             layer_size=cfg.custom.layer_size,
+            activation_fn=get_activation("tanh"),
         )
     elif cfg.custom.network == "fourier_net":
         heat_net = FourierNetArch(
             input_keys=input_keys,
             output_keys=[Key("theta_star")],
             layer_size=cfg.custom.layer_size,
+            activation_fn=get_activation("tanh"),
         )
-    elif cfg.custom.network == "modified_fourier_net":
-        heat_net = ModifiedFourierNetArch(
-            input_keys=input_keys,
-            output_keys=[Key("theta_star")],
-            layer_size=cfg.custom.layer_size,
+    else:
+        sys.exit(
+            f"Unknown network type {cfg.custom.network}. Please choose 'fully_connected' or 'fourier_net'."
         )
     phys_node = [
         Node.from_sympy(delta_t * Symbol("theta_star") + ambient_temp, "theta")

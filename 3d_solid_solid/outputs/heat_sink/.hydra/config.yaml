@@ -81,3 +81,4 @@ batch_size:
   heat_source: 1000
 custom:
   network: fourier_net
+  layer_size: 512

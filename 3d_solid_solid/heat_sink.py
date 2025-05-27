@@ -43,8 +43,8 @@ dir_path = os.path.dirname(os.path.abspath(__file__))
 
 @physicsnemo.sym.main(config_path="conf", config_name="config")
 def run(cfg) -> None:
-    cfg.network_dir = dir_path + "/outputs/" + cfg.custom.network + "_" + cfg.custom.layer_size
-    cfg.initialization_network_dir = dir_path + "/outputs/" + cfg.custom.network  + "_" + cfg.custom.layer_size
+    cfg.network_dir = dir_path + "/outputs/" + cfg.custom.network + f"_{cfg.custom.layer_size}"
+    cfg.initialization_network_dir = dir_path + "/outputs/" + cfg.custom.network + f"_{cfg.custom.layer_size}"
     x0, y0, z0 = -0.75, -0.50, -0.4375
     dx, dy, dz = 0.2, 0.2, 0.01
 

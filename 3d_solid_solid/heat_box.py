@@ -1,3 +1,6 @@
+"""
+Test for heat diffusion in a 3D box with a heat source in the center
+"""
 import os
 import sys
 import warnings
@@ -5,7 +8,7 @@ import warnings
 import torch
 import numpy as np
 from sympy import Symbol, Eq, And, Or, tanh, Not
-from typing import Dict
+
 import physicsnemo.sym
 from physicsnemo.sym.hydra import to_absolute_path, instantiate_arch
 from physicsnemo.sym.solver import Solver
@@ -25,7 +28,7 @@ from physicsnemo.sym.domain.constraint import (
     IntegralBoundaryConstraint,
 )
 from physicsnemo.sym.domain.monitor import PointwiseMonitor
-from physicsnemo.sym.domain.validator import PointwiseValidator, PointVTKValidator, GridValidator
+from physicsnemo.sym.domain.validator import PointwiseValidator, PointVTKValidator
 from physicsnemo.sym.key import Key
 from physicsnemo.sym.node import Node
 from physicsnemo.sym.geometry import Parameterization, Parameter
@@ -33,102 +36,30 @@ from physicsnemo.sym.models.fully_connected import FullyConnectedArch
 from physicsnemo.models.layers.activations import get_activation
 from physicsnemo.sym.utils.io.vtk import VTKFromFile, VTKUniformGrid
 from physicsnemo.sym.domain.inferencer import PointVTKInferencer
-from physicsnemo.sym.utils.io import InferencerPlotter, GridValidatorPlotter, plotter
+from physicsnemo.sym.utils.io import InferencerPlotter, GridValidatorPlotter, GridValidatorPlotter
 from physicsnemo.sym.models.modified_fourier_net import ModifiedFourierNetArch
 from physicsnemo.sym.models.fourier_net import FourierNetArch
 from physicsnemo.sym.utils.io.vtk import var_to_polyvtk
 from conv_bc import ConvectiveBC
-import matplotlib.pyplot as plt
 
 dir_path = os.path.dirname(os.path.abspath(__file__))
 
-class Plotter(plotter._Plotter):
-    def __call__(
-        self,
-        invar,
-        true_outvar,
-        pred_outvar
-    ):
-
-        ndim = next(iter(invar.values())).ndim - 2
-        if ndim > 3:
-            print("Default plotter can only handle <=3 input dimensions, passing")
-            return []
-
-        # get difference
-        diff_outvar = {}
-        for k, v in true_outvar.items():
-            diff_outvar[k] = true_outvar[k] - pred_outvar[k]
-
-        f = self._make_plot(ndim, invar, true_outvar, pred_outvar, diff_outvar)
-        return f
-
-    def _interpolate_data(self, n_points, invar, outvar):
-        pass
-
-
-    def _make_plot(self, ndim, invar, true_outvar, pred_outvar, diff_outvar):
-
-        # make plot
-        nrows = max(len(invar), len(true_outvar))
-        f = plt.figure(figsize=(4 * 5, nrows * 4), dpi=100)
-        for ic, (d, tag) in enumerate(
-            zip(
-                [invar, true_outvar, pred_outvar, diff_outvar],
-                ["in", "true", "pred", "diff"],
-            )
-        ):
-            for ir, k in enumerate(d):
-                plt.subplot2grid((nrows, 4), (ir, ic))
-                if ndim == 1:
-                    plt.plot(d[k][0, :])
-                elif ndim == 2:
-                    plt.imshow(d[k][0, :, :].T, origin="lower")
-                else:
-                    z = d[k].shape[-1] // 2  # Z slice
-                    plt.imshow(d[k][0, :, :, z].T, origin="lower")
-                plt.title(f"{k}_{tag}")
-                plt.colorbar()
-        plt.tight_layout()
-        return f
 
 @physicsnemo.sym.main(config_path="conf", config_name="config")
 def run(cfg) -> None:
-    cfg.network_dir = dir_path + "/outputs/fixed/" + cfg.custom.network + f"_{cfg.custom.layer_size}_{cfg.custom.activation}"
-    cfg.initialization_network_dir = dir_path + "/outputs/fixed/" + cfg.custom.network + f"_{cfg.custom.layer_size}_{cfg.custom.activation}"
-    x0, y0, z0 = -0.1, -0.1, -0.05
-    dx, dy, dz = 0.2, 0.2, 0.01
-
-    kappa = 3
-    source_temp = 100
-    ambient_temp = 30
-    h_conv = 1
-
-    # bottom‐patch fraction
-    hx_frac, hy_frac = 0.50, 0.50
-    hx, hy = dx * hx_frac, dy * hy_frac
-    hs_x0 = x0 + 0.5 * (dx - hx)
-    hs_y0 = y0 + 0.5 * (dy - hy)
-
-    # fins on top
-    nfins, fin_w, fin_h = 5, 0.005, 0.2
-    gap = (dy - nfins * fin_w) / (nfins - 1) if nfins > 1 else 0.0
-
-    # base plate
-    plate = Box((x0, y0, z0), (x0 + dx, y0 + dy, z0 + dz))
-
-    # fins, first fin at y=y0, last at y=y0+dy−fin_w
-    single_fin = Box((x0, y0, z0 + dz), (x0 + dx, y0 + fin_w, z0 + dz + fin_h))
-    fin_center = ((x0 + x0 + dx) / 2, (y0 + y0 + fin_w) / 2, z0 + dz + fin_h / 2)
-    fins = single_fin.repeat(
-        gap + fin_w,
-        repeat_lower=(0,0,0),
-        repeat_higher=(0, nfins - 1, 0),
-        center=fin_center
+    cfg.network_dir = dir_path + "/heat_box_outputs/" + cfg.custom.network + f"_{cfg.custom.layer_size}_{cfg.custom.activation}"
+    cfg.initialization_network_dir = dir_path + "/heat_box_outputs/" + cfg.custom.network + f"_{cfg.custom.layer_size}_{cfg.custom.activation}"
+    
+    x0, y0, z0 = -1.0, -1.0, -1.0
+    dx, dy, dz = 2.0, 2.0, 2.0
+    # unit box
+    box = Box(
+        point_1=(x0, y0, z0),
+        point_2=(x0 + dx, y0 + dy, z0 + dz)
     )
-
-    heat_sink = plate + fins
-
+    kappa = 3
+    h_conv = 50
+    ambient_temp = 30
     domain = Domain()
 
     heat_eq = Diffusion(T="theta", D=kappa, dim=3, Q=1.0, time=False)
@@ -171,7 +102,7 @@ def run(cfg) -> None:
 
     interior = PointwiseInteriorConstraint(
         nodes=nodes,
-        geometry=heat_sink,
+        geometry=box,
         outvar={"diffusion_theta": 0},
         batch_size=cfg.batch_size.interior,
         lambda_weighting={"diffusion_theta": Symbol("sdf")},
@@ -181,7 +112,7 @@ def run(cfg) -> None:
     source_grad = 100
 
     xc, yc = (x0 + dx/2), (y0 + dy/2)
-    wx, wy  = 0.10, 0.10
+    wx, wy  = 0.50, 0.50
 
     xl, xr = xc - wx/2, xc + wx/2
     yl, yr = yc - wy/2, yc + wy/2
@@ -198,25 +129,25 @@ def run(cfg) -> None:
 
     heat_source = PointwiseBoundaryConstraint(
         nodes=nodes,
-        geometry=heat_sink,
+        geometry=box,
         outvar={"normal_gradient_theta": gradient_normal},
         batch_size=cfg.batch_size.heat_source,
-        criteria=(Eq(z, z0))
+        criteria=(Eq(z, z0)),
+        batch_per_epoch=1000,
     )
     domain.add_constraint(heat_source, "heat_source")
 
     convective = PointwiseBoundaryConstraint(
         nodes=nodes,
-        geometry=heat_sink,
+        geometry=box,
         outvar={"convective_theta": 0},
         batch_size=cfg.batch_size.boundary,
-        # lambda_weighting={"convective_theta": walls_sdf},
         criteria=Not(Eq(z, z0)),
     )
     domain.add_constraint(convective, "convective")
 
     vtk_obj = VTKFromFile(
-        file_path=to_absolute_path(dir_path + "/temp_sol.vtu"),
+        file_path=to_absolute_path(dir_path + "/heat_box.vtu"),
         export_map={"Temperature": ["theta"]},
     )
 
@@ -237,7 +168,6 @@ def run(cfg) -> None:
     #     true_vtk_map={"theta": ["Temperature_true"]},
     #     requires_grad=False,
     #     batch_size=1024,
-    #     # plotter=Plotter()
     # )
     # domain.add_validator(grid_validator, "vtk_val")
 

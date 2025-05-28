@@ -63,7 +63,7 @@ optimizer:
     compute_gradients: adam_compute_gradients
     apply_gradients: adam_apply_gradients
   _target_: torch.optim.Adam
-  lr: 0.001
+  lr: 0.01
   betas:
   - 0.9
   - 0.999

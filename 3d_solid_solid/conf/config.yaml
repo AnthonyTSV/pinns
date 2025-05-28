@@ -8,7 +8,7 @@ defaults :
 jit: false
 
 optimizer:
-  lr: 1e-3
+  lr: 1e-2
 
 scheduler:
   decay_rate: 0.95

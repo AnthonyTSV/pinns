@@ -42,56 +42,6 @@ import matplotlib.pyplot as plt
 
 dir_path = os.path.dirname(os.path.abspath(__file__))
 
-class Plotter(plotter._Plotter):
-    def __call__(
-        self,
-        invar,
-        true_outvar,
-        pred_outvar
-    ):
-
-        ndim = next(iter(invar.values())).ndim - 2
-        if ndim > 3:
-            print("Default plotter can only handle <=3 input dimensions, passing")
-            return []
-
-        # get difference
-        diff_outvar = {}
-        for k, v in true_outvar.items():
-            diff_outvar[k] = true_outvar[k] - pred_outvar[k]
-
-        f = self._make_plot(ndim, invar, true_outvar, pred_outvar, diff_outvar)
-        return f
-
-    def _interpolate_data(self, n_points, invar, outvar):
-        pass
-
-
-    def _make_plot(self, ndim, invar, true_outvar, pred_outvar, diff_outvar):
-
-        # make plot
-        nrows = max(len(invar), len(true_outvar))
-        f = plt.figure(figsize=(4 * 5, nrows * 4), dpi=100)
-        for ic, (d, tag) in enumerate(
-            zip(
-                [invar, true_outvar, pred_outvar, diff_outvar],
-                ["in", "true", "pred", "diff"],
-            )
-        ):
-            for ir, k in enumerate(d):
-                plt.subplot2grid((nrows, 4), (ir, ic))
-                if ndim == 1:
-                    plt.plot(d[k][0, :])
-                elif ndim == 2:
-                    plt.imshow(d[k][0, :, :].T, origin="lower")
-                else:
-                    z = d[k].shape[-1] // 2  # Z slice
-                    plt.imshow(d[k][0, :, :, z].T, origin="lower")
-                plt.title(f"{k}_{tag}")
-                plt.colorbar()
-        plt.tight_layout()
-        return f
-
 @physicsnemo.sym.main(config_path="conf", config_name="config")
 def run(cfg) -> None:
     cfg.network_dir = dir_path + "/outputs/fixed/" + cfg.custom.network + f"_{cfg.custom.layer_size}_{cfg.custom.activation}"
@@ -175,10 +125,11 @@ def run(cfg) -> None:
         outvar={"diffusion_theta": 0},
         batch_size=cfg.batch_size.interior,
         lambda_weighting={"diffusion_theta": Symbol("sdf")},
+        quasirandom=True,
     )
     domain.add_constraint(interior, "interior")
 
-    source_grad = 100
+    source_grad = 5
 
     xc, yc = (x0 + dx/2), (y0 + dy/2)
     wx, wy  = 0.10, 0.10
@@ -201,7 +152,9 @@ def run(cfg) -> None:
         geometry=heat_sink,
         outvar={"normal_gradient_theta": gradient_normal},
         batch_size=cfg.batch_size.heat_source,
-        criteria=(Eq(z, z0))
+        criteria=(Eq(z, z0)),
+        batch_per_epoch=2048,
+        quasirandom=True
     )
     domain.add_constraint(heat_source, "heat_source")
 
@@ -212,6 +165,8 @@ def run(cfg) -> None:
         batch_size=cfg.batch_size.boundary,
         # lambda_weighting={"convective_theta": walls_sdf},
         criteria=Not(Eq(z, z0)),
+        batch_per_epoch=2048,
+        quasirandom=True
     )
     domain.add_constraint(convective, "convective")
 

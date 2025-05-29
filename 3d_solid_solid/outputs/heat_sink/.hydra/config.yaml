@@ -78,7 +78,7 @@ scheduler:
 batch_size:
   interior: 5000
   boundary: 2000
-  heat_source: 2000
+  heat_source: 1000
 custom:
   network: fourier_net
   layer_size: 512

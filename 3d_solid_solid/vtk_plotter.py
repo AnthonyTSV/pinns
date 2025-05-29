@@ -5,7 +5,6 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import matplotlib
-import scienceplots
 from scipy.interpolate import griddata
 from physicsnemo.sym.utils.io.plotter import _Plotter
 from typing import List, Tuple

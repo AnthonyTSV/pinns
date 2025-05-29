@@ -61,7 +61,7 @@ def run(cfg) -> None:
     kappa = 3
     source_temp = 100
     ambient_temp = 30
-    h_conv = 1
+    h_conv = 0.1
 
     # bottom‐patch fraction
     hx_frac, hy_frac = 0.50, 0.50

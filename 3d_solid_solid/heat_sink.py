@@ -38,6 +38,7 @@ from physicsnemo.sym.models.modified_fourier_net import ModifiedFourierNetArch
 from physicsnemo.sym.models.fourier_net import FourierNetArch
 from physicsnemo.sym.utils.io.vtk import var_to_polyvtk
 from conv_bc import ConvectiveBC
+from vtk_plotter import VTKPlotter
 import matplotlib.pyplot as plt
 
 dir_path = os.path.dirname(os.path.abspath(__file__))
@@ -48,6 +49,14 @@ def run(cfg) -> None:
     cfg.initialization_network_dir = dir_path + "/outputs/fixed/" + cfg.custom.network + f"_{cfg.custom.layer_size}_{cfg.custom.activation}"
     x0, y0, z0 = -0.1, -0.1, -0.05
     dx, dy, dz = 0.2, 0.2, 0.01
+
+    plotter = VTKPlotter(
+        path_to_pinns=f"{cfg.network_dir}/inferencers/vtk_inf.vtu",
+        path_to_vtk=dir_path + "/temp_sol.vtu",
+        slice_origins=[(0, 0, -0.049854574181513345), (0, 0, 0)],
+        slice_normals=[(0, 0, 1), (0, 1, 0)],
+        array_name="Temperature"
+    )
 
     kappa = 3
     source_temp = 100
@@ -123,9 +132,7 @@ def run(cfg) -> None:
         nodes=nodes,
         geometry=heat_sink,
         outvar={"diffusion_theta": 0},
-        batch_size=cfg.batch_size.interior,
-        lambda_weighting={"diffusion_theta": Symbol("sdf")},
-        quasirandom=True,
+        batch_size=cfg.batch_size.interior
     )
     domain.add_constraint(interior, "interior")
 
@@ -153,8 +160,7 @@ def run(cfg) -> None:
         outvar={"normal_gradient_theta": gradient_normal},
         batch_size=cfg.batch_size.heat_source,
         criteria=(Eq(z, z0)),
-        batch_per_epoch=2048,
-        quasirandom=True
+        batch_per_epoch=2048
     )
     domain.add_constraint(heat_source, "heat_source")
 
@@ -165,8 +171,7 @@ def run(cfg) -> None:
         batch_size=cfg.batch_size.boundary,
         # lambda_weighting={"convective_theta": walls_sdf},
         criteria=Not(Eq(z, z0)),
-        batch_per_epoch=2048,
-        quasirandom=True
+        batch_per_epoch=2048
     )
     domain.add_constraint(convective, "convective")
 
@@ -185,16 +190,16 @@ def run(cfg) -> None:
     )
     domain.add_inferencer(grid_inferencer, "vtk_inf")
 
-    # grid_validator = PointVTKValidator(
-    #     vtk_obj=vtk_obj,
-    #     nodes=nodes,
-    #     input_vtk_map={"x": "x", "y": "y", "z": "z"},
-    #     true_vtk_map={"theta": ["Temperature_true"]},
-    #     requires_grad=False,
-    #     batch_size=1024,
-    #     # plotter=Plotter()
-    # )
-    # domain.add_validator(grid_validator, "vtk_val")
+    grid_validator = PointVTKValidator(
+        vtk_obj=vtk_obj,
+        nodes=nodes,
+        input_vtk_map={"x": "x", "y": "y", "z": "z"},
+        true_vtk_map={"theta": ["Temperature"]},
+        requires_grad=False,
+        batch_size=1024,
+        plotter=plotter
+    )
+    domain.add_validator(grid_validator, "vtk_val")
 
     # make solver
     slv = Solver(cfg, domain)

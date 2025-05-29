@@ -12,7 +12,7 @@ optimizer:
 
 scheduler:
   decay_rate: 0.95
-  decay_steps: 5000
+  decay_steps: 8000
 
 training: 
   rec_validation_freq: 1000
@@ -24,7 +24,7 @@ training:
 batch_size:
   interior: 5000
   boundary: 2000
-  heat_source: 1000
+  heat_source: 2000
 
 custom:
   network: fourier_net

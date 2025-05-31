@@ -111,6 +111,14 @@ def run(cfg) -> None:
             layer_size=cfg.custom.layer_size,
             activation_fn=get_activation(cfg.custom.activation),
         )
+    elif cfg.custom.network == "modified_fourier_net":
+        heat_net = ModifiedFourierNetArch(
+            input_keys=input_keys,
+            output_keys=[Key("theta")],
+            layer_size=cfg.custom.layer_size,
+            activation_fn=get_activation(cfg.custom.activation),
+            frequencies=("axis", [i for i in range(1, 20)]),
+        )
     else:
         sys.exit(
             f"Unknown network type {cfg.custom.network}. Please choose 'fully_connected' or 'fourier_net'."

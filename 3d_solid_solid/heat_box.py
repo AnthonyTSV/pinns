@@ -41,6 +41,7 @@ from physicsnemo.sym.models.modified_fourier_net import ModifiedFourierNetArch
 from physicsnemo.sym.models.fourier_net import FourierNetArch
 from physicsnemo.sym.utils.io.vtk import var_to_polyvtk
 from conv_bc import ConvectiveBC
+from vtk_plotter import VTKPlotter
 
 dir_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -49,7 +50,7 @@ dir_path = os.path.dirname(os.path.abspath(__file__))
 def run(cfg) -> None:
     cfg.network_dir = dir_path + "/heat_box_outputs/" + cfg.custom.network + f"_{cfg.custom.layer_size}_{cfg.custom.activation}"
     cfg.initialization_network_dir = dir_path + "/heat_box_outputs/" + cfg.custom.network + f"_{cfg.custom.layer_size}_{cfg.custom.activation}"
-    
+
     x0, y0, z0 = -1.0, -1.0, -1.0
     dx, dy, dz = 2.0, 2.0, 2.0
     # unit box
@@ -161,15 +162,24 @@ def run(cfg) -> None:
     )
     domain.add_inferencer(grid_inferencer, "vtk_inf")
 
-    # grid_validator = PointVTKValidator(
-    #     vtk_obj=vtk_obj,
-    #     nodes=nodes,
-    #     input_vtk_map={"x": "x", "y": "y", "z": "z"},
-    #     true_vtk_map={"theta": ["Temperature_true"]},
-    #     requires_grad=False,
-    #     batch_size=1024,
-    # )
-    # domain.add_validator(grid_validator, "vtk_val")
+    plotter = VTKPlotter(
+        path_to_pinns=f"{cfg.network_dir}/inferencers/vtk_inf.vtu",
+        path_to_vtk=dir_path + "/heat_box.vtu",
+        slice_origins=[(0, 0, -0.99), (0, 0, 0)],
+        slice_normals=[(0, 0, 1), (0, 1, 0)],
+        array_name="Temperature"
+    )
+
+    grid_validator = PointVTKValidator(
+        vtk_obj=vtk_obj,
+        nodes=nodes,
+        input_vtk_map={"x": "x", "y": "y", "z": "z"},
+        true_vtk_map={"theta": ["Temperature"]},
+        requires_grad=False,
+        batch_size=1024,
+        plotter=plotter
+    )
+    domain.add_validator(grid_validator, "vtk_val")
 
     # make solver
     slv = Solver(cfg, domain)

@@ -47,21 +47,20 @@ dir_path = os.path.dirname(os.path.abspath(__file__))
 def run(cfg) -> None:
     cfg.network_dir = dir_path + "/outputs/fixed/" + cfg.custom.network + f"_{cfg.custom.layer_size}_{cfg.custom.activation}"
     cfg.initialization_network_dir = dir_path + "/outputs/fixed/" + cfg.custom.network + f"_{cfg.custom.layer_size}_{cfg.custom.activation}"
-    x0, y0, z0 = -0.1, -0.1, -0.05
-    dx, dy, dz = 0.2, 0.2, 0.01
+    dx, dy, dz = 0.65, 0.875, 0.05
+    x0, y0, z0 = -dx / 2, -dy / 2, -dz / 2
 
     plotter = VTKPlotter(
         path_to_pinns=f"{cfg.network_dir}/inferencers/vtk_inf.vtu",
         path_to_vtk=dir_path + "/temp_sol.vtu",
-        slice_origins=[(0, 0, -0.049854574181513345), (0, 0, 0)],
+        slice_origins=[(0, 0, -z0+1e-3), (0, 0, 0)],
         slice_normals=[(0, 0, 1), (0, 1, 0)],
         array_name="Temperature"
     )
 
     kappa = 3
-    source_temp = 100
     ambient_temp = 30
-    h_conv = 0.1
+    h_conv = 10
 
     # bottom‐patch fraction
     hx_frac, hy_frac = 0.50, 0.50
@@ -117,7 +116,6 @@ def run(cfg) -> None:
             output_keys=[Key("theta")],
             layer_size=cfg.custom.layer_size,
             activation_fn=get_activation(cfg.custom.activation),
-            frequencies=("axis", [i for i in range(1, 20)]),
         )
     else:
         sys.exit(
@@ -144,10 +142,10 @@ def run(cfg) -> None:
     )
     domain.add_constraint(interior, "interior")
 
-    source_grad = 5
+    source_grad = 100
 
     xc, yc = (x0 + dx/2), (y0 + dy/2)
-    wx, wy  = 0.10, 0.10
+    wx, wy  = 0.25, 0.25
 
     xl, xr = xc - wx/2, xc + wx/2
     yl, yr = yc - wy/2, yc + wy/2
@@ -168,7 +166,6 @@ def run(cfg) -> None:
         outvar={"normal_gradient_theta": gradient_normal},
         batch_size=cfg.batch_size.heat_source,
         criteria=(Eq(z, z0)),
-        batch_per_epoch=2048
     )
     domain.add_constraint(heat_source, "heat_source")
 
@@ -179,7 +176,6 @@ def run(cfg) -> None:
         batch_size=cfg.batch_size.boundary,
         # lambda_weighting={"convective_theta": walls_sdf},
         criteria=Not(Eq(z, z0)),
-        batch_per_epoch=2048
     )
     domain.add_constraint(convective, "convective")
 

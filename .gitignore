@@ -1,3 +1,7 @@
 .venv
 .vscode
 __pycache__
+*.Identifier
+*.tar
+3d_solid_solid/outputs/
+3d_solid_solid/heat_box_outputs/

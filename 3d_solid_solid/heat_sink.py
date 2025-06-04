@@ -53,14 +53,17 @@ def run(cfg) -> None:
     plotter = VTKPlotter(
         path_to_pinns=f"{cfg.network_dir}/inferencers/vtk_inf.vtu",
         path_to_vtk=dir_path + "/temp_sol.vtu",
-        slice_origins=[(0, 0, -z0+1e-3), (0, 0, 0)],
+        slice_origins=[(0, 0, -0.02449326630430), (0, 0, 0)],
         slice_normals=[(0, 0, 1), (0, 1, 0)],
-        array_name="Temperature"
+        array_name="Temperature_true"
     )
 
     kappa = 3
     ambient_temp = 30
     h_conv = 10
+    L = dx
+    delta_t = 100 * L / kappa
+    Bi = h_conv * L / kappa
 
     # bottom‐patch fraction
     hx_frac, hy_frac = 0.50, 0.50
@@ -69,17 +72,17 @@ def run(cfg) -> None:
     hs_y0 = y0 + 0.5 * (dy - hy)
 
     # fins on top
-    nfins, fin_w, fin_h = 5, 0.005, 0.2
+    nfins, fin_w, fin_h = 17, 0.0075, 0.8625
     gap = (dy - nfins * fin_w) / (nfins - 1) if nfins > 1 else 0.0
 
     # base plate
-    plate = Box((x0, y0, z0), (x0 + dx, y0 + dy, z0 + dz))
+    plate = Box((x0/L, y0/L, z0/L), ((x0 + dx)/L, (y0 + dy)/L, (z0 + dz)/L))
 
     # fins, first fin at y=y0, last at y=y0+dy−fin_w
-    single_fin = Box((x0, y0, z0 + dz), (x0 + dx, y0 + fin_w, z0 + dz + fin_h))
-    fin_center = ((x0 + x0 + dx) / 2, (y0 + y0 + fin_w) / 2, z0 + dz + fin_h / 2)
+    single_fin = Box((x0/L, y0/L, (z0 + dz)/L), ((x0 + dx)/L, (y0 + fin_w)/L, (z0 + dz + fin_h)/L))
+    fin_center = ((x0 + x0 + dx) / (2*L), (y0 + y0 + fin_w) / (2*L), z0 + dz + fin_h / (2*L))
     fins = single_fin.repeat(
-        gap + fin_w,
+        (gap + fin_w)/L,
         repeat_lower=(0,0,0),
         repeat_higher=(0, nfins - 1, 0),
         center=fin_center
@@ -87,33 +90,42 @@ def run(cfg) -> None:
 
     heat_sink = plate + fins
 
+    # s = heat_sink.sample_boundary(nr_points=10000)
+    # var_to_polyvtk(s, "boundary")
+    # print("Surface Area:{:.3f}".format(np.sum(s["area"])))
+    # s = heat_sink.sample_interior(nr_points=10000, compute_sdf_derivatives=True)
+    # var_to_polyvtk(s, "interior")
+
     domain = Domain()
 
-    heat_eq = Diffusion(T="theta", D=kappa, dim=3, Q=1.0, time=False)
-    grad_theta = GradNormal("theta", dim=3, time=False)
+    heat_eq = Diffusion(T="theta_star", D=1.0, dim=3, Q=0.0, time=False)
+    grad_theta = GradNormal("theta_star", dim=3, time=False)
     conv_theta = ConvectiveBC(
-        T="theta", kappa=kappa, h=h_conv, T_ext=ambient_temp, dim=3, time=False
+        T="theta_star", kappa=1.0, h=Bi, T_ext=ambient_temp, dim=3, time=False, non_dim=True
     )
+    x_ref  = -dx/2
+    y_ref  = -dy/2
+    z_ref  = -dz/2
 
     input_keys = [Key("x"), Key("y"), Key("z")]
     if cfg.custom.network == "fully_connected":
         heat_net = FullyConnectedArch(
             input_keys=input_keys,
-            output_keys=[Key("theta")],
+            output_keys=[Key("theta_star")],
             layer_size=cfg.custom.layer_size,
             activation_fn=get_activation(cfg.custom.activation),
         )
     elif cfg.custom.network == "fourier_net":
         heat_net = FourierNetArch(
             input_keys=input_keys,
-            output_keys=[Key("theta")],
+            output_keys=[Key("theta_star")],
             layer_size=cfg.custom.layer_size,
             activation_fn=get_activation(cfg.custom.activation),
         )
     elif cfg.custom.network == "modified_fourier_net":
         heat_net = ModifiedFourierNetArch(
             input_keys=input_keys,
-            output_keys=[Key("theta")],
+            output_keys=[Key("theta_star")],
             layer_size=cfg.custom.layer_size,
             activation_fn=get_activation(cfg.custom.activation),
         )
@@ -121,15 +133,23 @@ def run(cfg) -> None:
         sys.exit(
             f"Unknown network type {cfg.custom.network}. Please choose 'fully_connected' or 'fourier_net'."
         )
-    # phys_node = [
-    #     Node.from_sympy(delta_t * Symbol("theta") + ambient_temp, "theta_phys")
-    # ]
+    phys_node = [
+        Node.from_sympy(delta_t * Symbol("theta_star") + ambient_temp, "theta_phys")
+    ]
+    x_star = Symbol("x")
+    y_star = Symbol("y")
+    z_star = Symbol("z")
+    x_phys_node = Node.from_sympy(x_star * L + x_ref, "x_phys")
+    y_phys_node = Node.from_sympy(y_star * L + y_ref, "y_phys")
+    z_phys_node = Node.from_sympy(z_star * L + z_ref, "z_phys")
+    coordinates = [x_phys_node, y_phys_node, z_phys_node]
     nodes = (
+        coordinates +
         heat_eq.make_nodes() +
         grad_theta.make_nodes() +
         conv_theta.make_nodes() +
-        [heat_net.make_node(name="heat_net")]
-        # phys_node
+        [heat_net.make_node(name="heat_net")] +
+        phys_node
     )
 
     x, y, z = Symbol("x"), Symbol("y"), Symbol("z")
@@ -137,14 +157,15 @@ def run(cfg) -> None:
     interior = PointwiseInteriorConstraint(
         nodes=nodes,
         geometry=heat_sink,
-        outvar={"diffusion_theta": 0},
+        outvar={"diffusion_theta_star": 0},
         batch_size=cfg.batch_size.interior
     )
     domain.add_constraint(interior, "interior")
 
-    source_grad = 100
+    source_grad = 1
 
-    xc, yc = (x0 + dx/2), (y0 + dy/2)
+    # xc, yc = (x0 + dx/2), (y0 + dy/2)
+    xc, yc = (x0 + dx/2)/L, (y0 + dy/2)/L
     wx, wy  = 0.25, 0.25
 
     xl, xr = xc - wx/2, xc + wx/2
@@ -160,35 +181,36 @@ def run(cfg) -> None:
     indicator = step_lx * step_rx * step_ly * step_ry
     gradient_normal = source_grad * indicator
 
+    z0_dimless = z0 / L
     heat_source = PointwiseBoundaryConstraint(
         nodes=nodes,
         geometry=heat_sink,
-        outvar={"normal_gradient_theta": gradient_normal},
+        outvar={"normal_gradient_theta_star": gradient_normal},
         batch_size=cfg.batch_size.heat_source,
-        criteria=(Eq(z, z0)),
+        criteria=(Eq(z, z0_dimless)),
     )
     domain.add_constraint(heat_source, "heat_source")
 
     convective = PointwiseBoundaryConstraint(
         nodes=nodes,
         geometry=heat_sink,
-        outvar={"convective_theta": 0},
+        outvar={"convective_theta_star": 0},
         batch_size=cfg.batch_size.boundary,
         # lambda_weighting={"convective_theta": walls_sdf},
-        criteria=Not(Eq(z, z0)),
+        criteria=Not(Eq(z, z0_dimless)),
     )
     domain.add_constraint(convective, "convective")
 
     vtk_obj = VTKFromFile(
         file_path=to_absolute_path(dir_path + "/temp_sol.vtu"),
-        export_map={"Temperature": ["theta"]},
+        export_map={"Temperature": ["theta_star"], "Temperature_true": ["theta_phys"]},	
     )
 
     grid_inferencer = PointVTKInferencer(
         vtk_obj=vtk_obj,
         nodes=nodes,
         input_vtk_map={"x": "x", "y": "y", "z": "z"},
-        output_names=["theta"],
+        output_names=["theta_star", "theta_phys"],
         batch_size=1024,
         requires_grad=False,
     )
@@ -198,7 +220,7 @@ def run(cfg) -> None:
         vtk_obj=vtk_obj,
         nodes=nodes,
         input_vtk_map={"x": "x", "y": "y", "z": "z"},
-        true_vtk_map={"theta": ["Temperature"]},
+        true_vtk_map={"theta_phys": ["Temperature_true"]},
         requires_grad=False,
         batch_size=1024,
         plotter=plotter

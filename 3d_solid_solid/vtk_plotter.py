@@ -124,7 +124,7 @@ class VTKPlotter(_Plotter):
         """
         plots = []
         for slice_origin, slice_normal in zip(self.slice_origins, self.slice_normals):
-            pinns_pts, pinns_conn, pinns_temp = self.slice_vtk_data(pinns_path, slice_origin, slice_normal, array_name="Temperature")
+            pinns_pts, pinns_conn, pinns_temp = self.slice_vtk_data(pinns_path, slice_origin, slice_normal, array_name=self.array_name)
             fem_pts, fem_conn, fem_temp = self.slice_vtk_data(fem_path, slice_origin, slice_normal, array_name="Temperature")
 
             fig, axes = plt.subplots(
@@ -140,11 +140,11 @@ class VTKPlotter(_Plotter):
 if __name__ == "__main__":
     # Example usage
     plotter = VTKPlotter(
-        path_to_pinns=os.path.join(BASE_DIR, "outputs/fixed/fourier_net_512_silu/inferencers/vtk_inf.vtu"),
+        path_to_pinns=os.path.join(BASE_DIR, "outputs/fixed/fully_connected_64_silu/inferencers/vtk_inf.vtu"),
         path_to_vtk=os.path.join(BASE_DIR, "temp_sol.vtu"),
-        slice_origins=[(0, 0, -0.049854574181513345), (0, 0, -0.049854574181513345)],
+        slice_origins=[(0, 0, -0.02449326630430), (0, 0, -0.02449326630430)],
         slice_normals=[(0, 0, 1), (0, 1, 0)],
-        array_name="Temperature"
+        array_name="Temperature_true"
     )
     plotter()
     plt.show()  # Show the plots

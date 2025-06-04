@@ -7,7 +7,7 @@ class ConvectiveBC(PDE):
 
     name = "ConvectiveBC"
 
-    def __init__(self, T, kappa, h, T_ext, dim = 3 , time = False):
+    def __init__(self, T, kappa, h, T_ext, dim = 3 , time = False, non_dim = False):
         self.T = T
         self.dim = dim
         self.time = time
@@ -30,6 +30,11 @@ class ConvectiveBC(PDE):
 
         T = Function(T)(*input_variables)
         self.equations = {}
-        self.equations["convective_" + self.T] = (
-            kappa * (normal_x * T.diff(x)  + normal_y * T.diff(y) + normal_z * T.diff(z)) + h * (T - T_ext)
-        )
+        if not non_dim:
+            self.equations["convective_" + self.T] = (
+                kappa * (normal_x * T.diff(x)  + normal_y * T.diff(y) + normal_z * T.diff(z)) + h * (T - T_ext)
+            )
+        else:
+            self.equations["convective_" + self.T] = (
+                (normal_x * T.diff(x)  + normal_y * T.diff(y) + normal_z * T.diff(z)) + h * T
+            )

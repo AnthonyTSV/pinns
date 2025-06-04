@@ -22,9 +22,9 @@ training:
   max_steps: 300000
 
 batch_size:
-  interior: 2000
-  boundary: 1000
-  heat_source: 1000
+  interior: 4000
+  boundary: 2000
+  heat_source: 2000
 
 custom:
   network: modified_fourier_net

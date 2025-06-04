@@ -80,6 +80,6 @@ batch_size:
   boundary: 1000
   heat_source: 1000
 custom:
-  network: fully_connected
+  network: modified_fourier_net
   layer_size: 64
   activation: silu

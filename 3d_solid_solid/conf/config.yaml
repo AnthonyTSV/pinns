@@ -27,6 +27,6 @@ batch_size:
   heat_source: 2000
 
 custom:
-  network: modified_fourier_net
-  layer_size: 512
+  network: fourier_net
+  layer_size: 128
   activation: silu

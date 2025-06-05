@@ -52,7 +52,7 @@ def run(cfg) -> None:
 
     plotter = VTKPlotter(
         path_to_pinns=f"{cfg.network_dir}/inferencers/vtk_inf.vtu",
-        path_to_vtk=dir_path + "/temp_sol.vtu",
+        path_to_vtk=dir_path + "/temp_sol_3_fins.vtu",
         slice_origins=[(0, 0, -0.02449326630430), (0, 0, 0)],
         slice_normals=[(0, 0, 1), (0, 1, 0)],
         array_name="Temperature"
@@ -60,7 +60,7 @@ def run(cfg) -> None:
 
     kappa = 3
     ambient_temp = 30
-    h_conv = 0.1
+    h_conv = 1
 
     # bottom‐patch fraction
     hx_frac, hy_frac = 0.50, 0.50
@@ -69,7 +69,7 @@ def run(cfg) -> None:
     hs_y0 = y0 + 0.5 * (dy - hy)
 
     # fins on top
-    nfins, fin_w, fin_h = 5, 0.005, 0.2
+    nfins, fin_w, fin_h = 3, 0.0075, 0.8625
     gap = (dy - nfins * fin_w) / (nfins - 1) if nfins > 1 else 0.0
 
     # base plate
@@ -138,7 +138,7 @@ def run(cfg) -> None:
         nodes=nodes,
         geometry=heat_sink,
         outvar={"diffusion_theta": 0},
-        lambda_weighting={"diffusion_theta": 100},
+        lambda_weighting={"diffusion_theta": Symbol("sdf")},
         batch_size=cfg.batch_size.interior
     )
     domain.add_constraint(interior, "interior")
@@ -166,6 +166,7 @@ def run(cfg) -> None:
         geometry=heat_sink,
         outvar={"normal_gradient_theta": gradient_normal},
         batch_size=cfg.batch_size.heat_source,
+        lambda_weighting={"normal_gradient_theta": 100},
         criteria=(Eq(z, z0)),
     )
     domain.add_constraint(heat_source, "heat_source")
@@ -181,7 +182,7 @@ def run(cfg) -> None:
     domain.add_constraint(convective, "convective")
 
     vtk_obj = VTKFromFile(
-        file_path=to_absolute_path(dir_path + "/temp_sol.vtu"),
+        file_path=to_absolute_path(dir_path + "/temp_sol_3_fins.vtu"),
         export_map={"Temperature": ["theta"]},
     )
 

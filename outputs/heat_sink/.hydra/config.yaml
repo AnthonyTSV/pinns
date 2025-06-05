@@ -76,10 +76,10 @@ scheduler:
   decay_rate: 0.95
   decay_steps: 8000
 batch_size:
-  interior: 2000
-  boundary: 1000
+  interior: 4000
+  boundary: 2000
   heat_source: 1000
 custom:
-  network: modified_fourier_net
-  layer_size: 64
+  network: fourier_net
+  layer_size: 128
   activation: silu

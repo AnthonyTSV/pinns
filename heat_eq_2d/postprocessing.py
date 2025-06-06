@@ -104,11 +104,14 @@ plt.legend()
 plt.savefig(BASE_DIR + "/figures/l2_relative_error_theta_activation_functions.pdf", dpi=300)
 
 # get data for batch sizes
-# batch_sizes, "tanh", (128, 2)
+# batch_sizes, "tanh", (128, 3)
 
 paths = {
-    2000: BASE_DIR + "/outputs/tanh_interior_2000_arch_256x4/events.out.tfevents.1748196757.ml1.hpc.uio.no.3528539.0",
-    4000: BASE_DIR + "/outputs/tanh_interior_4000_arch_256x4/events.out.tfevents.1748197880.ml1.hpc.uio.no.3530858.0"
+    100: BASE_DIR + "/outputs/tanh_interior_100_arch_128x3/events.out.tfevents.1749142747.Oppenheimer.97029.0",
+    500: BASE_DIR + "/outputs/tanh_interior_500_arch_128x3/events.out.tfevents.1749143583.Oppenheimer.105355.0",
+    1000: BASE_DIR + "/outputs/tanh_interior_1000_arch_128x3/events.out.tfevents.1749144482.Oppenheimer.114327.0",
+    2000: BASE_DIR + "/outputs/tanh_interior_2000_arch_128x3/events.out.tfevents.1748179220.ml1.hpc.uio.no.3493322.0",
+    4000: BASE_DIR + "/outputs/tanh_interior_4000_arch_128x3/events.out.tfevents.1749145455.Oppenheimer.124045.0"
 }
 
 data = {}
@@ -118,8 +121,11 @@ for batch_size, path in paths.items():
 
 # plot loss_aggregated
 fig = plt.figure()
-plt.plot(data[2000]["loss_aggregated"]["step"], data[2000]["loss_aggregated"]["value"], label="Batch size 2000")
-plt.plot(data[4000]["loss_aggregated"]["step"], data[4000]["loss_aggregated"]["value"], label="Batch size 4000")
+plt.plot(data[100]["loss_aggregated"]["step"], data[100]["loss_aggregated"]["value"], label="100")
+plt.plot(data[500]["loss_aggregated"]["step"], data[500]["loss_aggregated"]["value"], label="500")
+plt.plot(data[1000]["loss_aggregated"]["step"], data[1000]["loss_aggregated"]["value"], label="1000")
+plt.plot(data[2000]["loss_aggregated"]["step"], data[2000]["loss_aggregated"]["value"], label="2000")
+plt.plot(data[4000]["loss_aggregated"]["step"], data[4000]["loss_aggregated"]["value"], label="4000")
 plt.xlabel("Step")
 plt.ylabel("Loss")
 plt.grid()
@@ -128,6 +134,9 @@ plt.legend()
 plt.savefig(BASE_DIR + "/figures/losses_batch_sizes.pdf", dpi=300)
 # plot l2_relative_error_theta
 fig = plt.figure()
+plt.plot(data[100]["l2_relative_error_theta"]["step"], data[100]["l2_relative_error_theta"]["value"], label="Batch size 100")
+plt.plot(data[500]["l2_relative_error_theta"]["step"], data[500]["l2_relative_error_theta"]["value"], label="Batch size 500")
+plt.plot(data[1000]["l2_relative_error_theta"]["step"], data[1000]["l2_relative_error_theta"]["value"], label="Batch size 1000")
 plt.plot(data[2000]["l2_relative_error_theta"]["step"], data[2000]["l2_relative_error_theta"]["value"], label="Batch size 2000")
 plt.plot(data[4000]["l2_relative_error_theta"]["step"], data[4000]["l2_relative_error_theta"]["value"], label="Batch size 4000")
 plt.xlabel("Step")
@@ -136,6 +145,24 @@ plt.grid()
 plt.yscale("log")
 plt.legend()
 plt.savefig(BASE_DIR + "/figures/l2_relative_error_theta_batch_sizes.pdf", dpi=300)
+
+# convergence rates for batch sizes
+# calculate convergence rates for batch sizes
+batch_sizes = [100, 500, 1000, 2000, 4000]
+errors = {}
+for batch_size in batch_sizes:
+    steps = data[batch_size]["l2_relative_error_theta"]["step"]
+    values = data[batch_size]["l2_relative_error_theta"]["value"]
+    # calculate convergence rate as the slope of the log-log plot
+    errors[batch_size] = values[-1]
+
+# plot errors
+fig, ax = plt.subplots()
+ax.loglog(batch_sizes, list(errors.values()), marker='o')
+plt.xlabel("Batch size")
+plt.ylabel("Final loss")
+plt.grid()
+plt.savefig(BASE_DIR + "/figures/convergence_rates_batch_sizes.pdf", dpi=300)
 
 # get data for architectures
 # achitectures, "tanh", 2000

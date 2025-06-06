@@ -39,23 +39,29 @@ for tensor in ea.Tags()["tensors"]:
 # plot l2_relative_error_theta_phys
 l2_relative_error_theta_phys = data["l2_relative_error_theta_phys"]
 
-fig = plt.figure()
-plt.plot(l2_relative_error_theta_phys["step"], l2_relative_error_theta_phys["value"])
-plt.xlabel("Step")
-plt.ylabel(r"$l_2$ relative error")
-plt.grid()
-plt.savefig(BASE_DIR + "/figures/l2_relative_error_theta_phys.pdf", dpi=300)
+fig, ax1 = plt.subplots()
+
+# plt.savefig(BASE_DIR + "/figures/l2_relative_error_theta_phys.pdf", dpi=300)
 
 # plot loss_diffusion_theta, loss_convective_theta, loss_normal_gradient_theta and loss_aggregated
 
-fig = plt.figure()
-plt.plot(data["loss_diffusion_theta"]["step"], data["loss_diffusion_theta"]["value"], label="Diffusion")
-plt.plot(data["loss_convective_theta"]["step"], data["loss_convective_theta"]["value"], label="Convective")
-plt.plot(data["loss_normal_gradient_theta"]["step"], data["loss_normal_gradient_theta"]["value"], label="Insulated")
-plt.plot(data["loss_aggregated"]["step"], data["loss_aggregated"]["value"], label="Aggregated")
+fig, ax1 = plt.subplots()
+p1 = ax1.plot(data["loss_diffusion_theta"]["step"], data["loss_diffusion_theta"]["value"], label="Diffusion")
+p2 = ax1.plot(data["loss_convective_theta"]["step"], data["loss_convective_theta"]["value"], label="Convective")
+p3 = ax1.plot(data["loss_normal_gradient_theta"]["step"], data["loss_normal_gradient_theta"]["value"], label="Insulated")
+p4 = ax1.plot(data["loss_aggregated"]["step"], data["loss_aggregated"]["value"], label="Aggregated")
+ax1.set_ylabel("Loss")
+ax1.set_yscale("log")
+
+ax2 = ax1.twinx()
+p5 = ax2.plot(l2_relative_error_theta_phys["step"], l2_relative_error_theta_phys["value"], '--', label=r"$l^2$ relative error")
+ax2.yaxis.set_label_text(r"$l^2$ relative error of $\theta$ (phys.)")
+ax2.set_yscale("log")
+
+lns = p1 + p2 + p3 + p4 + p5
+labs = [l.get_label() for l in lns]
+ax1.legend(lns, labs, loc='upper right')
+
 plt.xlabel("Step")
-plt.ylabel("Loss")
 plt.grid()
-plt.yscale("log")
-plt.legend()
 plt.savefig(BASE_DIR + "/figures/losses.pdf", dpi=300)

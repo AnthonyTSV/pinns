@@ -7,8 +7,8 @@ defaults:
 custom:
     activation: tanh
     parametric: false
-    layer_size: 256
-    num_layers: 6
+    layer_size: 128
+    num_layers: 3
 scheduler:
     decay_rate: 0.95
     decay_steps: 5000
@@ -17,4 +17,4 @@ training:
 batch_size:
     left_wall: 1000
     wall: 1000
-    interior: 2000
+    interior: 4000

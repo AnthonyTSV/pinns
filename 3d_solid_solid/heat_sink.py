@@ -52,7 +52,7 @@ def run(cfg) -> None:
 
     plotter = VTKPlotter(
         path_to_pinns=f"{cfg.network_dir}/inferencers/vtk_inf.vtu",
-        path_to_vtk=dir_path + "/temp_sol_3_fins.vtu",
+        path_to_vtk=dir_path + "/temp_sol_5_fins.vtu",
         slice_origins=[(0, 0, -0.02449326630430), (0, 0, 0)],
         slice_normals=[(0, 0, 1), (0, 1, 0)],
         array_name="Temperature"
@@ -69,7 +69,7 @@ def run(cfg) -> None:
     hs_y0 = y0 + 0.5 * (dy - hy)
 
     # fins on top
-    nfins, fin_w, fin_h = 3, 0.0075, 0.8625
+    nfins, fin_w, fin_h = 5, 0.05, 0.8625
     gap = (dy - nfins * fin_w) / (nfins - 1) if nfins > 1 else 0.0
 
     # base plate
@@ -109,13 +109,7 @@ def run(cfg) -> None:
             output_keys=[Key("theta")],
             layer_size=cfg.custom.layer_size,
             activation_fn=get_activation(cfg.custom.activation),
-        )
-    elif cfg.custom.network == "modified_fourier_net":
-        heat_net = ModifiedFourierNetArch(
-            input_keys=input_keys,
-            output_keys=[Key("theta")],
-            layer_size=cfg.custom.layer_size,
-            activation_fn=get_activation(cfg.custom.activation),
+            frequencies=("gaussian", 2, 128)
         )
     else:
         sys.exit(
@@ -182,7 +176,7 @@ def run(cfg) -> None:
     domain.add_constraint(convective, "convective")
 
     vtk_obj = VTKFromFile(
-        file_path=to_absolute_path(dir_path + "/temp_sol_3_fins.vtu"),
+        file_path=to_absolute_path(dir_path + "/temp_sol_5_fins.vtu"),
         export_map={"Temperature": ["theta"]},
     )
 

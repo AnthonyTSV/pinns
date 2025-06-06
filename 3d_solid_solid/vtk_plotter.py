@@ -140,11 +140,11 @@ class VTKPlotter(_Plotter):
 if __name__ == "__main__":
     # Example usage
     plotter = VTKPlotter(
-        path_to_pinns=os.path.join(BASE_DIR, "outputs/fixed/fully_connected_64_silu/inferencers/vtk_inf.vtu"),
-        path_to_vtk=os.path.join(BASE_DIR, "temp_sol.vtu"),
-        slice_origins=[(0, 0, -0.02449326630430), (0, 0, -0.02449326630430)],
+        path_to_pinns=os.path.join(BASE_DIR, "outputs/fixed/fourier_net_128_silu/inferencers/vtk_inf.vtu"),
+        path_to_vtk=os.path.join(BASE_DIR, "temp_sol_5_fins.vtu"),
+        slice_origins=[(0, 0, -0.02449326630430), (0, 0, 0)],
         slice_normals=[(0, 0, 1), (0, 1, 0)],
-        array_name="Temperature_true"
+        array_name="Temperature"
     )
     plotter()
     plt.show()  # Show the plots

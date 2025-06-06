@@ -55,8 +55,7 @@ def get_combined_data(ea_list):
     return data
 
 paths = {
-    "fourier_net_128_silu": [],
-    "fourier_net_512_silu": [],
+    "fourier_net_128": [],
     "fully_connected_128": [],
 }
 
@@ -67,7 +66,9 @@ def get_paths_for_model(model_name):
     return model_paths
 
 fully_connected_128_paths = get_paths_for_model("fully_connected_128_silu")
+fourier_net_128_paths = get_paths_for_model("fourier_net_128_silu")
 paths["fully_connected_128"] = fully_connected_128_paths
+paths["fourier_net_128"] = fourier_net_128_paths
 data = {}
 for key, path in paths.items():
     if isinstance(path, list):
@@ -77,13 +78,56 @@ for key, path in paths.items():
         ea = load_event(path)
         data[key] = get_data(ea)
 
+# sort data by step
+for key, values in data.items():
+    for k in values:
+        sorted_indices = np.argsort(values[k]["step"])
+        values[k]["step"] = values[k]["step"][sorted_indices]
+        values[k]["value"] = values[k]["value"][sorted_indices]
+    data[key] = values
+
 # plot loss_aggregated
-# limit the x-axis to 300000 steps
 fig, ax = plt.subplots()
-plt.plot(data["fully_connected_128"]["loss_aggregated"]["step"], data["fully_connected_128"]["loss_aggregated"]["value"], label="Fully Connected 128")
+plt.plot(data["fully_connected_128"]["loss_aggregated"]["step"], data["fully_connected_128"]["loss_aggregated"]["value"], label="Fully Connected")
+plt.plot(data["fourier_net_128"]["loss_aggregated"]["step"], data["fourier_net_128"]["loss_aggregated"]["value"], label="Fourier Net")
 plt.xlabel("Step")
 plt.ylabel("Loss")
-plt.legend(loc="upper left")
+plt.legend(loc="upper right")
 plt.grid()
 plt.yscale("log")
-plt.show()
+plt.savefig(os.path.join(BASE_DIR, "heat_sink_figures/loss_aggregated.pdf"), dpi=300)
+
+# plot l2_relative_error_theta
+fig, ax1 = plt.subplots()
+plt.plot(data["fully_connected_128"]["l2_relative_error_theta"]["step"], data["fully_connected_128"]["l2_relative_error_theta"]["value"], label="Fully Connected")
+plt.plot(data["fourier_net_128"]["l2_relative_error_theta"]["step"], data["fourier_net_128"]["l2_relative_error_theta"]["value"], label="Fourier Net")
+plt.xlabel("Step")
+plt.ylabel(r"$l^2$ relative error of $\theta$")
+plt.legend(loc="upper right")
+plt.grid()
+plt.yscale("log")
+plt.savefig(os.path.join(BASE_DIR, "heat_sink_figures/l2_relative_error_theta.pdf"), dpi=300)
+
+# plot loss_normal_gradient_theta, loss_diffusion_theta, loss_convective_theta for fully_connected_128
+fig, ax1 = plt.subplots()
+plt.plot(data["fully_connected_128"]["loss_normal_gradient_theta"]["step"], data["fully_connected_128"]["loss_normal_gradient_theta"]["value"], label="Bottom Plate")
+plt.plot(data["fully_connected_128"]["loss_diffusion_theta"]["step"][1:-1], data["fully_connected_128"]["loss_diffusion_theta"]["value"][1:-1], label="Diffusion")
+plt.plot(data["fully_connected_128"]["loss_convective_theta"]["step"], data["fully_connected_128"]["loss_convective_theta"]["value"], label="Convective")
+plt.xlabel("Step")
+plt.ylabel("Loss")
+plt.legend(loc="upper right")
+plt.grid()
+plt.yscale("log")
+plt.savefig(os.path.join(BASE_DIR, "heat_sink_figures/fully_connected_losses.pdf"), dpi=300)
+
+# plot loss_normal_gradient_theta, loss_diffusion_theta, loss_convective_theta for fourier_net_128
+fig, ax1 = plt.subplots()
+plt.plot(data["fourier_net_128"]["loss_normal_gradient_theta"]["step"], data["fourier_net_128"]["loss_normal_gradient_theta"]["value"], label="Bottom Plate")
+plt.plot(data["fourier_net_128"]["loss_diffusion_theta"]["step"], data["fourier_net_128"]["loss_diffusion_theta"]["value"], label="Diffusion")
+plt.plot(data["fourier_net_128"]["loss_convective_theta"]["step"], data["fourier_net_128"]["loss_convective_theta"]["value"], label="Convective")
+plt.xlabel("Step")
+plt.ylabel("Loss")
+plt.legend(loc="upper right")
+plt.grid()
+plt.yscale("log")
+plt.savefig(os.path.join(BASE_DIR, "heat_sink_figures/fourier_net_losses.pdf"), dpi=300)
